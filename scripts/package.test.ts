@@ -18,6 +18,9 @@ test("names release packages by operating system and architecture", () => {
 	expect(getReleasePackageName("darwin", "arm64")).toBe(
 		"atlas-browser-connect-macos-arm64",
 	);
+	expect(getReleasePackageName("darwin", "x64")).toBe(
+		"atlas-browser-connect-macos-x64",
+	);
 });
 
 test("uses zip on Windows and tar.gz elsewhere", () => {
