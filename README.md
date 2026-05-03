@@ -1,18 +1,17 @@
 # atlas-browser-connect
 
-Bridge MCP clients to Chromium extension APIs through Manifest V3 Native
+Expose Chromium extension APIs to MCP clients through Manifest V3 Native
 Messaging.
 
-`atlas-browser-connect` exposes one MCP tool, `chrome_call`, that forwards calls
-to the browser extension runtime:
+`atlas-browser-connect` gives agents one portable MCP tool, `chrome_call`, for
+calling permitted `chrome.*` extension APIs from Chrome, Edge, Brave, Chromium,
+or Chrome for Testing. Use it to inspect and control browser state through the
+same APIs an extension can use: tabs, windows, tab groups, bookmarks, and any
+other MV3 service-worker API granted by the extension manifest.
 
-```json
-{
-	"namespace": "tabs",
-	"method": "query",
-	"args": [{ "active": true, "currentWindow": true }]
-}
-```
+Common calls include `tabs.query`, `windows.getAll`, `bookmarks.getTree`,
+`bookmarks.search`, `tabGroups.query`, and other permitted namespace/method
+pairs.
 
 Chrome, Edge, Brave, or Chromium decide what is allowed through their normal
 extension permission model. The bridge does not bypass Manifest V3 permissions.
