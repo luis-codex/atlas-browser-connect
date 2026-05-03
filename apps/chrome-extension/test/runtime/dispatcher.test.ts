@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { dispatchChromeCall } from "./dispatcher";
+import { dispatchChromeCall } from "../../src/runtime/dispatcher";
 
 test("dispatches tabs.query against the Chrome runtime API", async () => {
 	const chromeApi = {

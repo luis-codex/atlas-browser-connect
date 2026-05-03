@@ -13,13 +13,13 @@ mkdirSync("./dist/native-messaging-host", { recursive: true });
 
 const builds = [
 	Bun.build({
-		entrypoints: ["./apps/chrome-extension/background.ts"],
+		entrypoints: ["./apps/chrome-extension/src/background.ts"],
 		outdir: "./dist/chrome-extension",
 		format: "esm",
 		minify: true,
 	}),
 	Bun.build({
-		entrypoints: ["./apps/mcp-server/index.ts"],
+		entrypoints: ["./apps/mcp-server/src/index.ts"],
 		outdir: "./dist/mcp",
 		format: "esm",
 		target: "node",
@@ -29,7 +29,7 @@ const builds = [
 const compileNativeHost = Bun.spawn([
 	"bun",
 	"build",
-	"./apps/native-messaging-host/index.ts",
+	"./apps/native-messaging-host/src/index.ts",
 	"--compile",
 	"--outfile",
 	nativeHostOutput,

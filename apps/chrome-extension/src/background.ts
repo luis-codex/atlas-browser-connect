@@ -1,5 +1,5 @@
-import type { ChromeCallRequest } from "../../packages/chrome-bridge-protocol/protocol";
-import { dispatchChromeCall } from "./dispatcher";
+import type { ChromeCallRequest } from "../../../packages/chrome-bridge-protocol/protocol";
+import { dispatchChromeCall } from "./runtime/dispatcher";
 
 const NATIVE_HOST_NAME = "com.qbytes.atlas_chrome_runtime";
 
@@ -14,6 +14,12 @@ function connectNativeHost() {
 	});
 
 	port.onDisconnect.addListener(() => {
+		const errorMessage = chrome.runtime.lastError?.message;
+
+		if (errorMessage) {
+			console.warn(`Native Messaging host disconnected: ${errorMessage}`);
+		}
+
 		port = undefined;
 	});
 }

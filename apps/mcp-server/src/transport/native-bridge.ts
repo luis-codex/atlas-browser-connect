@@ -3,13 +3,12 @@ import net from "node:net";
 import type {
 	ChromeCallRequest,
 	ChromeCallResponse,
-} from "../../packages/chrome-bridge-protocol/protocol";
-
-const PIPE_PATH = "\\\\.\\pipe\\atlas-browser-connect";
+} from "../../../../packages/chrome-bridge-protocol/protocol";
+import { getNativeBridgePath } from "../../../../packages/native-bridge-path/bridge-path";
 
 export async function sendChromeCall(
 	request: ChromeCallRequest,
-	pipePath = PIPE_PATH,
+	pipePath = getNativeBridgePath(),
 ): Promise<ChromeCallResponse> {
 	return new Promise((resolve) => {
 		const client = net.createConnection(pipePath);

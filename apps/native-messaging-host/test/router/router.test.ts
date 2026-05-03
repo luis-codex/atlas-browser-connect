@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { ChromeRequestRouter } from "./router";
+import { ChromeRequestRouter } from "../../src/router/router";
 
 test("routes a pipe request to Chrome and resolves with Chrome response", async () => {
 	const sentToChrome: unknown[] = [];
@@ -36,5 +36,25 @@ test("routes a pipe request to Chrome and resolves with Chrome response", async 
 		id: "req_1",
 		ok: true,
 		result: [{ id: 1 }],
+	});
+});
+
+test("resolves a pending pipe request when Chrome does not answer", async () => {
+	const router = new ChromeRequestRouter(() => {}, {
+		requestTimeoutMs: 1,
+	});
+
+	await expect(
+		router.routeRequest({
+			args: [],
+			id: "req_timeout",
+			method: "query",
+			namespace: "tabs",
+			type: "chrome.call",
+		}),
+	).resolves.toEqual({
+		error: { message: "Chrome extension did not answer in time" },
+		id: "req_timeout",
+		ok: false,
 	});
 });

@@ -1,6 +1,7 @@
 {
 	"name": "atlas-browser-connect",
 	"type": "module",
+	"license": "MIT",
 	"scripts": {
 		"build": "bun run scripts/build.ts",
 		"check": "bunx --bun @biomejs/biome check .",
@@ -9,8 +10,9 @@
 		"lint": "bunx --bun @biomejs/biome lint .",
 		"lint:fix": "bunx --bun @biomejs/biome lint --write .",
 		"mcp": "node dist/mcp/index.js",
-		"mcp:dev": "bun run apps/mcp-server/index.ts",
-		"native-messaging-host": "bun run apps/native-messaging-host/index.ts",
+		"mcp:dev": "bun run apps/mcp-server/src/index.ts",
+		"native-messaging-host": "bun run apps/native-messaging-host/src/index.ts",
+		"package": "bun run scripts/package.ts",
 		"test": "bun test",
 		"typecheck": "tsc --noEmit"
 	},

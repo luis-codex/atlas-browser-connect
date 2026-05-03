@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { runChromeCallTool } from "./tools";
+import { runChromeCallTool } from "../../src/tools/chrome-call";
 
 test("chrome_call forwards tabs.query to the bridge", async () => {
 	const calls: unknown[] = [];

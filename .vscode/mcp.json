@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"atlas-browser-connect": {
+			"type": "stdio",
+			"command": "node",
+			"args": ["dist/mcp/index.js"]
+		}
+	}
+}

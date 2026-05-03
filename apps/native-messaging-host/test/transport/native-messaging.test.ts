@@ -3,7 +3,7 @@ import { expect, test } from "bun:test";
 import {
 	decodeNativeMessageFrame,
 	encodeNativeMessageFrame,
-} from "./native-messaging";
+} from "../../src/transport/native-messaging";
 
 test("encodes and decodes a native messaging frame", () => {
 	const frame = encodeNativeMessageFrame({

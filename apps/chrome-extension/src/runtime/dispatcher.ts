@@ -1,7 +1,7 @@
 import type {
 	ChromeCallRequest,
 	ChromeCallResponse,
-} from "../../packages/chrome-bridge-protocol/protocol";
+} from "../../../../packages/chrome-bridge-protocol/protocol";
 
 type ChromeApi = Record<string, Record<string, unknown>>;
 

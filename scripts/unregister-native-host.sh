@@ -2,7 +2,7 @@
 set -euo pipefail
 
 usage() {
-	echo "Usage: $0 <extension-id> [chrome|edge|brave|chromium|chrome-for-testing]" >&2
+	echo "Usage: $0 [chrome|edge|brave|chromium|chrome-for-testing|--all]" >&2
 	exit 1
 }
 
@@ -10,30 +10,39 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
 	usage
 fi
 
-if [[ $# -lt 1 || $# -gt 2 ]]; then
+if [[ $# -gt 1 ]]; then
 	usage
 fi
 
-EXTENSION_ID="$1"
-BROWSER="${2:-}"
+BROWSER="${1:-}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 
 source "$SCRIPT_DIR/native-host-common.sh"
 
 native_host_prepare_environment
+
+if [[ "$BROWSER" == "--all" ]]; then
+	for browser in "${SUPPORTED_BROWSERS[@]}"; do
+		BROWSER="$browser"
+		native_host_configure_browser_targets
+		native_host_unregister_browser
+	done
+
+	echo "Unregistered $HOST_NAME from all supported browser targets."
+	exit 0
+fi
+
 native_host_resolve_browser
 native_host_configure_browser_targets
-native_host_require_binary
-write_native_host_manifest "$EXTENSION_ID"
-register_native_host_browser
+native_host_unregister_browser
 
-echo "Registered $HOST_NAME for chrome-extension://$EXTENSION_ID/"
+echo "Unregistered $HOST_NAME"
 echo "Browser: $BROWSER"
 echo "Manifest: $MANIFEST_PATH"
 
 if [[ "$OS" == "windows" ]]; then
-	echo "Registry keys:"
+	echo "Removed registry keys:"
 	for registry_path in "${REGISTRY_PATHS[@]}"; do
 		echo "  $registry_path"
 	done

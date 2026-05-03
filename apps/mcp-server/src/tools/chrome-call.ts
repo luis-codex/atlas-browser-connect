@@ -3,7 +3,7 @@ import {
 	type ChromeCallRequest,
 	type ChromeCallResponse,
 	createChromeCallRequest,
-} from "../../packages/chrome-bridge-protocol/protocol";
+} from "../../../../packages/chrome-bridge-protocol/protocol";
 
 export type ChromeBridge = (
 	request: ChromeCallRequest,
