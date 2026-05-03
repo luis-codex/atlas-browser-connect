@@ -21,7 +21,7 @@ extension permission model. The bridge does not bypass Manifest V3 permissions.
 ## How It Works
 
 ```mermaid
-flowchart LR
+flowchart TB
   agent["Agent / MCP client"]
   mcp["MCP stdio server"]
   pipe["Local pipe"]
@@ -29,11 +29,17 @@ flowchart LR
   worker["Extension service worker"]
   chrome["chrome[namespace][method](...args)"]
 
-  agent --> mcp
-  mcp --> pipe
+  subgraph client["MCP side"]
+    direction LR
+    agent --> mcp --> pipe
+  end
+
+  subgraph browser["Browser side"]
+    direction LR
+    host <--> worker --> chrome
+  end
+
   pipe --> host
-  host <--> worker
-  worker --> chrome
 ```
 
 The MCP server and Native Messaging host are separate processes because both use
