@@ -33,94 +33,101 @@ stdio, but with different protocols.
 
 ## Requirements
 
-- [Node.js](https://nodejs.org/) to run the MCP server from a release package.
-- Chrome, Edge, Brave, or Chromium.
-- Bash-compatible shell for `scripts/register-native-host.sh`.
-  - Windows: Git Bash, MSYS2, Cygwin, or WSL.
-  - Linux/macOS: the system shell is usually enough.
+- Node.js and npm. The recommended runtime flow uses `npx`.
+- Chrome, Edge, Brave, Chromium, or Chrome for Testing.
+- Developer mode enabled in the browser extension page.
 
 ## Quick Start
 
-1. Download the release package for your operating system:
-
-```text
-atlas-browser-connect-windows-x64.zip
-atlas-browser-connect-linux-x64.tar.gz
-atlas-browser-connect-macos-x64.tar.gz
-atlas-browser-connect-macos-arm64.tar.gz
-```
-
-2. Extract the package.
-
-3. Load the extension:
-
-```text
-Chrome: chrome://extensions
-Edge:   edge://extensions
-Brave:  brave://extensions
-```
-
-Enable developer mode, choose "Load unpacked", select
-`dist/chrome-extension`, and copy the generated extension ID.
-
-4. Register the Native Messaging host:
+1. Generate the unpacked extension directory:
 
 ```bash
-./scripts/register-native-host.sh <EXTENSION_ID>
+npx -y atlas-browser-connect extension build
 ```
 
-The script detects supported browsers and asks which one to configure. You can
-also pass the browser explicitly:
+The command prints the folder that must be loaded into the browser.
+
+2. Load the extension:
+
+```text
+Chrome:   chrome://extensions
+Edge:     edge://extensions
+Brave:    brave://extensions
+Chromium: chromium://extensions
+```
+
+Enable developer mode, choose "Load unpacked", select the generated extension
+folder, and copy the generated extension ID.
+
+3. Register the Native Messaging host:
 
 ```bash
-./scripts/register-native-host.sh <EXTENSION_ID> brave
+npx -y atlas-browser-connect native register --extension-id <EXTENSION_ID> --browser chrome
 ```
 
-Supported values are `chrome`, `edge`, `brave`, `chromium`, and
+Supported browser values are `chrome`, `edge`, `brave`, `chromium`, and
 `chrome-for-testing`.
 
-5. Reload the extension card in the browser.
+The register command installs the Native Messaging host into a stable user data
+directory before writing the browser manifest. It does not register a path inside
+the temporary `npx` package cache.
 
-6. Add the MCP server to your client config.
+4. Reload the extension card in the browser.
 
-Use the built Node entrypoint:
-
-```json
-{
-	"command": "node",
-	"args": ["<ABSOLUTE_REPO_PATH>/dist/mcp/index.js"]
-}
-```
-
-On Windows, use escaped backslashes:
+5. Add the MCP server to your client config:
 
 ```json
 {
-	"command": "node",
-	"args": [
-		"C:\\path\\to\\atlas-browser-connect\\dist\\mcp\\index.js"
-	]
+	"mcpServers": {
+		"atlas-browser-connect": {
+			"command": "npx",
+			"args": ["-y", "atlas-browser-connect@latest", "mcp"]
+		}
+	}
 }
 ```
 
-## Uninstall
+The MCP command does not need the extension ID. The extension ID is only used by
+`native register` to authorize the loaded extension in the Native Messaging
+manifest.
 
-Remove the Native Messaging registration for one browser:
+## CLI Commands
 
-```bash
-./scripts/unregister-native-host.sh brave
-```
-
-Or remove every supported browser target known by the project:
+Generate or refresh the unpacked extension:
 
 ```bash
-./scripts/unregister-native-host.sh --all
+npx -y atlas-browser-connect extension build
 ```
 
-The unregister script removes only the Native Messaging registration and
-manifest created by this project. It does not delete `dist`, source files, or
-the browser extension. Reload or close the browser after unregistering so any
-open native host connection is released.
+Choose a custom extension output directory:
+
+```bash
+npx -y atlas-browser-connect extension build --out ./atlas-extension
+```
+
+Register Native Messaging:
+
+```bash
+npx -y atlas-browser-connect native register --extension-id <EXTENSION_ID> --browser chrome
+```
+
+Unregister one browser:
+
+```bash
+npx -y atlas-browser-connect native unregister --browser chrome
+```
+
+Unregister all supported browser targets:
+
+```bash
+npx -y atlas-browser-connect native unregister --browser all
+```
+
+Check local installation paths:
+
+```bash
+npx -y atlas-browser-connect doctor
+```
 
 ## MCP Client Examples
 
@@ -130,8 +137,8 @@ open native host connection is released.
 {
 	"mcpServers": {
 		"atlas-browser-connect": {
-			"command": "node",
-			"args": ["<ABSOLUTE_REPO_PATH>/dist/mcp/index.js"]
+			"command": "npx",
+			"args": ["-y", "atlas-browser-connect@latest", "mcp"]
 		}
 	}
 }
@@ -146,8 +153,8 @@ For `.vscode/mcp.json`:
 	"servers": {
 		"atlas-browser-connect": {
 			"type": "stdio",
-			"command": "node",
-			"args": ["<ABSOLUTE_REPO_PATH>/dist/mcp/index.js"]
+			"command": "npx",
+			"args": ["-y", "atlas-browser-connect@latest", "mcp"]
 		}
 	}
 }
@@ -162,8 +169,8 @@ your client expects.
 {
 	"mcpServers": {
 		"atlas-browser-connect": {
-			"command": "node",
-			"args": ["<ABSOLUTE_REPO_PATH>/dist/mcp/index.js"]
+			"command": "npx",
+			"args": ["-y", "atlas-browser-connect@latest", "mcp"]
 		}
 	}
 }
@@ -199,24 +206,22 @@ the extension manifest has the required permission.
 ```text
 apps/
   chrome-extension/       MV3 extension runtime
+  cli/                    npm command surface
   mcp-server/             MCP stdio server
   native-messaging-host/  Chrome Native Messaging host
 packages/
   chrome-bridge-protocol/ Shared request/response contract
-scripts/                  Build and installation automation
+  native-bridge-path/     Local pipe/socket naming
+scripts/                  Build automation
 ```
 
-Each executable app uses the same lightweight Ports and Adapters layout:
+Each executable app uses a lightweight Ports and Adapters layout:
 
 ```text
 app/
   src/   runtime code grouped by responsibility
   test/  tests for that app
 ```
-
-Folders use concrete names such as `transport`, `tools`, `runtime`, `host`, and
-`router`. The project does not use MVC because this is a runtime integration,
-not a UI or HTTP application.
 
 ## Development
 
@@ -228,12 +233,7 @@ bun test
 bun run typecheck
 bun run check
 bun run build
-```
-
-Format and apply safe fixes:
-
-```bash
-bun run check:fix
+bun run package:check
 ```
 
 Run the built MCP server:
@@ -242,58 +242,37 @@ Run the built MCP server:
 bun run mcp
 ```
 
-Run source entrypoints during development:
+## Publishing
 
-```bash
-bun run mcp:dev
-bun run native-messaging-host
-```
+Publishing to npm runs from `.github/workflows/publish.yml` when a tag matching
+`v*` is pushed.
 
-Normally the browser starts the native host. Running it manually is only useful
-for debugging.
+Configure npm Trusted Publishing for:
 
-Create a local release package:
+- package: `atlas-browser-connect`
+- GitHub owner/user: `luis-codex`
+- repository: `atlas-browser-connect`
+- workflow filename: `publish.yml`
 
-```bash
-bun run build
-bun run package
-```
-
-Packages are written to `release/`.
-
-## CI/CD
-
-GitHub Actions validates the project on Windows, Linux, and macOS:
-
-- tests;
-- typecheck;
-- Biome check;
-- build;
-- MCP bundle syntax;
-- release package creation.
-
-Tagged releases matching `v*` publish OS-specific archives as GitHub Release
-assets. The release workflow can also be run manually with a tag input.
+No npm token is needed. Before tagging a release, update `package.json`
+`version`; npm rejects publishing the same version twice.
 
 ## Troubleshooting
 
 ### Native messaging host not found
 
-Run `bun run build`, register the host again with the current extension ID, then
-reload the extension:
+Run the register command again with the current extension ID, then reload the
+extension:
 
 ```bash
-./scripts/register-native-host.sh <EXTENSION_ID>
+npx -y atlas-browser-connect native register --extension-id <EXTENSION_ID> --browser chrome
 ```
-
-On Windows, the generated Native Messaging manifest is stored under the user
-profile instead of `dist`, so rebuilding does not delete the browser
-registration.
 
 ### Access to the native host is forbidden
 
 The extension ID in `allowed_origins` does not match the loaded extension.
-Re-run the registration script with the current extension ID.
+Re-run `native register` with the current extension ID from the browser
+extension page.
 
 ### `Chrome native host is not connected`
 

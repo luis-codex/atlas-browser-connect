@@ -1,15 +1,19 @@
-import { copyFileSync, mkdirSync, rmSync } from "node:fs";
+import {
+	chmodSync,
+	copyFileSync,
+	mkdirSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 
-const nativeHostOutput =
-	process.platform === "win32"
-		? "./dist/native-messaging-host/atlas-native-messaging-host.exe"
-		: "./dist/native-messaging-host/atlas-native-messaging-host";
+const cliOutput = "./dist/cli/index.js";
 
 rmSync("./dist/chrome-extension", { force: true, recursive: true });
+rmSync("./dist/cli", { force: true, recursive: true });
 rmSync("./dist/mcp", { force: true, recursive: true });
 rmSync("./dist/native-messaging-host", { force: true, recursive: true });
 mkdirSync("./dist/chrome-extension", { recursive: true });
-mkdirSync("./dist/native-messaging-host", { recursive: true });
 
 const builds = [
 	Bun.build({
@@ -24,20 +28,22 @@ const builds = [
 		format: "esm",
 		target: "node",
 	}),
+	Bun.build({
+		entrypoints: ["./apps/native-messaging-host/src/index.ts"],
+		outdir: "./dist/native-messaging-host",
+		format: "esm",
+		target: "node",
+	}),
+	Bun.build({
+		entrypoints: ["./apps/cli/src/index.ts"],
+		outdir: "./dist/cli",
+		format: "esm",
+		target: "node",
+	}),
 ];
-
-const compileNativeHost = Bun.spawn([
-	"bun",
-	"build",
-	"./apps/native-messaging-host/src/index.ts",
-	"--compile",
-	"--outfile",
-	nativeHostOutput,
-]);
 
 const results = await Promise.all(builds);
 const failedBuild = results.find((result) => !result.success);
-const nativeHostExitCode = await compileNativeHost.exited;
 
 if (failedBuild) {
 	for (const log of failedBuild.logs) {
@@ -47,11 +53,21 @@ if (failedBuild) {
 	process.exit(1);
 }
 
-if (nativeHostExitCode !== 0) {
-	process.exit(nativeHostExitCode);
-}
-
 copyFileSync(
 	"./apps/chrome-extension/manifest.json",
 	"./dist/chrome-extension/manifest.json",
 );
+
+ensureExecutableCli();
+
+function ensureExecutableCli() {
+	const contents = readFileSync(cliOutput, "utf8");
+
+	if (!contents.startsWith("#!/usr/bin/env node")) {
+		writeFileSync(cliOutput, `#!/usr/bin/env node\n${contents}`);
+	}
+
+	if (process.platform !== "win32") {
+		chmodSync(cliOutput, 0o755);
+	}
+}
