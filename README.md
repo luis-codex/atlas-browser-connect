@@ -1,5 +1,7 @@
 # atlas-browser-connect
 
+[![npm version](https://img.shields.io/npm/v/atlas-browser-connect.svg)](https://www.npmjs.com/package/atlas-browser-connect)
+
 Expose Chromium extension APIs to MCP clients through Manifest V3 Native
 Messaging.
 
