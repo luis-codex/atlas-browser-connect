@@ -1,0 +1,28 @@
+{
+	"name": "atlas-browser-connect",
+	"type": "module",
+	"scripts": {
+		"build": "bun run scripts/build.ts",
+		"check": "bunx --bun @biomejs/biome check .",
+		"check:fix": "bunx --bun @biomejs/biome check --write .",
+		"format": "bunx --bun @biomejs/biome format --write .",
+		"lint": "bunx --bun @biomejs/biome lint .",
+		"lint:fix": "bunx --bun @biomejs/biome lint --write .",
+		"mcp": "node dist/mcp/index.js",
+		"mcp:dev": "bun run apps/mcp-server/index.ts",
+		"native-messaging-host": "bun run apps/native-messaging-host/index.ts",
+		"test": "bun test",
+		"typecheck": "tsc --noEmit"
+	},
+	"private": true,
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.29.0",
+		"zod": "^4.4.2"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.14",
+		"@types/bun": "latest",
+		"@types/chrome": "0.1.40",
+		"typescript": "^5.9.3"
+	}
+}
