@@ -6,7 +6,7 @@ import { sendChromeCall } from "./transport/native-bridge";
 
 const server = new McpServer({
 	name: "atlas-browser-connect",
-	version: "0.1.0",
+	version: "0.1.1",
 });
 
 registerChromeCallTool(server, sendChromeCall);
