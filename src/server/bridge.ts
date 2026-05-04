@@ -25,7 +25,16 @@ export async function sendChromeCall(
 
 			const line = response.slice(0, newlineIndex);
 			client.end();
-			resolve(JSON.parse(line) as ChromeCallResponse);
+
+			try {
+				resolve(JSON.parse(line) as ChromeCallResponse);
+			} catch {
+				resolve({
+					error: { message: "Malformed response from native host" },
+					id: request.id,
+					ok: false,
+				});
+			}
 		});
 
 		client.on("error", () => {

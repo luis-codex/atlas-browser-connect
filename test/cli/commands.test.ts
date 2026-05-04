@@ -39,6 +39,20 @@ test("parses extension build with optional output directory and permissions", ()
 		outPath: "C:\\temp\\ext",
 		permissions: ["scripting"],
 	});
+	// PowerShell .ps1 npm shims convert comma-separated values to
+	// space-separated strings when forwarding $args to node.
+	expect(
+		parseCommand([
+			"extension",
+			"build",
+			"--permissions",
+			"tabs scripting debugger",
+		]),
+	).toEqual({
+		kind: "extension-build",
+		outPath: undefined,
+		permissions: ["tabs", "scripting", "debugger"],
+	});
 });
 
 test("parses native register with explicit extension id and browser", () => {

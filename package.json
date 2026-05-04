@@ -1,6 +1,6 @@
 {
 	"name": "atlas-browser-connect",
-	"version": "0.1.3",
+	"version": "0.1.4",
 	"description": "Expose permitted Chromium extension APIs to MCP clients through Native Messaging.",
 	"type": "module",
 	"license": "MIT",

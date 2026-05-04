@@ -1,6 +1,8 @@
 import type { ChromeCallRequest, ChromeCallResponse } from "../shared/protocol";
 
 const NATIVE_HOST_NAME = "com.qbytes.atlas_chrome_runtime";
+const RECONNECT_BASE_MS = 1_000;
+const RECONNECT_MAX_MS = 30_000;
 
 type ChromeApi = Record<string, Record<string, unknown>>;
 
@@ -45,6 +47,7 @@ async function dispatchChromeCall(
 // --- Native Messaging ---
 
 let port: chrome.runtime.Port | undefined;
+let reconnectDelay = RECONNECT_BASE_MS;
 
 function connectNativeHost() {
 	port = chrome.runtime.connectNative(NATIVE_HOST_NAME);
@@ -62,7 +65,18 @@ function connectNativeHost() {
 		}
 
 		port = undefined;
+		scheduleReconnect();
 	});
+
+	// Reset backoff on successful connection
+	reconnectDelay = RECONNECT_BASE_MS;
+}
+
+function scheduleReconnect() {
+	setTimeout(() => {
+		connectNativeHost();
+	}, reconnectDelay);
+	reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX_MS);
 }
 
 // Only connect in the actual extension runtime (not during tests)

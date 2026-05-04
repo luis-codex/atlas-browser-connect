@@ -67,10 +67,18 @@ export function startNativeMessagingHost({
 
 			const line = socketBuffer.slice(0, newlineIndex);
 			socketBuffer = socketBuffer.slice(newlineIndex + 1);
-			const request = JSON.parse(line) as ChromeCallRequest;
-			const response = await router.routeRequest(request);
 
-			socket.write(`${JSON.stringify(response)}\n`);
+			try {
+				const request = JSON.parse(line) as ChromeCallRequest;
+				const response = await router.routeRequest(request);
+
+				socket.write(`${JSON.stringify(response)}\n`);
+			} catch {
+				socket.write(
+					`${JSON.stringify({ error: { message: "Malformed request" }, id: "", ok: false })}\n`,
+				);
+			}
+
 			socket.end();
 		});
 	});

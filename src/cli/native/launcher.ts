@@ -25,7 +25,7 @@ export function createNativeHostLauncher({
 	platform?: Platform;
 }) {
 	if (platform === "win32") {
-		return `@echo off\r\n"${nodePath}" "%~dp0index.mjs" %*\r\n`;
+		return `@echo off\r\n"${escapeBatchArgument(nodePath)}" "%~dp0index.mjs" %*\r\n`;
 	}
 
 	return `#!/usr/bin/env sh
@@ -61,4 +61,9 @@ export function installNativeHostFiles({
 
 function escapeShellDoubleQuoted(value: string) {
 	return value.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+}
+
+/** Escape characters that have special meaning inside a batch script. */
+function escapeBatchArgument(value: string) {
+	return value.replaceAll("%", "%%").replaceAll("^", "^^");
 }

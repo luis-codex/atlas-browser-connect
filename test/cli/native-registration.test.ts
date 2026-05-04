@@ -94,6 +94,16 @@ test("creates platform launchers that pin the current Node executable", () => {
 	).toContain('exec "/usr/local/bin/node" "$SCRIPT_DIR/index.mjs" "$@"');
 });
 
+test("escapes batch-special characters in Windows .bat launcher", () => {
+	const launcher = createNativeHostLauncher({
+		nodePath: "C:\\100%_node^dir\\node.exe",
+		platform: "win32",
+	});
+
+	expect(launcher).toContain("100%%_node^^dir");
+	expect(launcher).not.toContain("100%_node^dir");
+});
+
 test("installs the native host JavaScript and launcher into a provided stable directory", () => {
 	const root = mkdtempSync(join(tmpdir(), "atlas-native-host-test-"));
 	const source = join(root, "package-cache", "index.js");

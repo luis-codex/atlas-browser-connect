@@ -96,10 +96,7 @@ function createProgram(setCommand: (command: CliCommand) => void) {
 				kind: "extension-build",
 				outPath: options.out,
 				permissions: options.permissions
-					? options.permissions
-							.split(",")
-							.map((p) => p.trim())
-							.filter(Boolean)
+					? options.permissions.split(/[,\s]+/).filter(Boolean)
 					: undefined,
 			});
 		});
