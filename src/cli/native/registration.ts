@@ -1,7 +1,11 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 
-import type { SupportedBrowser, UnregisterBrowser } from "../commands";
+import type {
+	RegisterBrowser,
+	SupportedBrowser,
+	UnregisterBrowser,
+} from "../commands";
 import { supportedBrowsers } from "../commands";
 import { getBrowserNativeHostTargets } from "./browser-targets";
 import { installNativeHostFiles } from "./launcher";
@@ -40,7 +44,7 @@ export function createNativeHostManifest({
 // --- Registration ---
 
 type RegisterNativeHostOptions = {
-	browser: SupportedBrowser;
+	browser: RegisterBrowser;
 	env?: Environment;
 	extensionId: string;
 	homeDir?: string;
@@ -68,20 +72,12 @@ export function registerNativeHost({
 	setWindowsRegistryValue = setWindowsRegistryValueWithPowerShell,
 	sourceEntryPath,
 }: RegisterNativeHostOptions) {
+	const browsers: SupportedBrowser[] =
+		browser === "all" ? [...supportedBrowsers] : [browser];
 	const paths = getStableAtlasPaths({ env, homeDir, platform });
-	const targets = getBrowserNativeHostTargets({
-		browser,
-		env,
-		homeDir,
-		platform,
-	});
 	const path = getPathApi(platform);
-	const manifestDir =
-		platform === "win32" ? paths.nativeManifestDir : targets.manifestDir;
-	const manifestPath =
-		platform === "win32"
-			? paths.nativeManifestPath
-			: path.join(manifestDir, nativeHostManifestFile);
+	const allRegistryKeys: string[] = [];
+	const allManifestPaths = new Set<string>();
 
 	installNativeHostFiles({
 		launcherPath: paths.nativeHostLauncherPath,
@@ -91,29 +87,47 @@ export function registerNativeHost({
 		sourceEntryPath,
 	});
 
-	mkdirSync(manifestDir, { recursive: true });
-	writeFileSync(
-		manifestPath,
-		`${JSON.stringify(
-			createNativeHostManifest({
-				extensionId,
-				hostPath: paths.nativeHostLauncherPath,
-			}),
-			null,
-			2,
-		)}\n`,
-		"utf8",
-	);
+	for (const browserTarget of browsers) {
+		const targets = getBrowserNativeHostTargets({
+			browser: browserTarget,
+			env,
+			homeDir,
+			platform,
+		});
+		const manifestDir =
+			platform === "win32" ? paths.nativeManifestDir : targets.manifestDir;
+		const manifestPath =
+			platform === "win32"
+				? paths.nativeManifestPath
+				: path.join(manifestDir, nativeHostManifestFile);
 
-	for (const registryKey of targets.registryKeys) {
-		setWindowsRegistryValue(registryKey, manifestPath);
+		mkdirSync(manifestDir, { recursive: true });
+		writeFileSync(
+			manifestPath,
+			`${JSON.stringify(
+				createNativeHostManifest({
+					extensionId,
+					hostPath: paths.nativeHostLauncherPath,
+				}),
+				null,
+				2,
+			)}\n`,
+			"utf8",
+		);
+		allManifestPaths.add(manifestPath);
+
+		for (const registryKey of targets.registryKeys) {
+			setWindowsRegistryValue(registryKey, manifestPath);
+			allRegistryKeys.push(registryKey);
+		}
 	}
 
 	return {
 		browser,
+		browsers,
 		launcherPath: paths.nativeHostLauncherPath,
-		manifestPath,
-		registryKeys: targets.registryKeys,
+		manifestPaths: [...allManifestPaths],
+		registryKeys: allRegistryKeys,
 	};
 }
 

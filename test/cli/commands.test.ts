@@ -111,3 +111,39 @@ test("rejects unknown options instead of ignoring them", () => {
 		parseCommand(["extension", "build", "--unknown", "value"]),
 	).toThrow("unknown option");
 });
+
+test("native register accepts --browser all", () => {
+	expect(
+		parseCommand([
+			"native",
+			"register",
+			"--extension-id",
+			"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			"--browser",
+			"all",
+		]),
+	).toEqual({
+		browser: "all",
+		extensionId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		kind: "native-register",
+	});
+});
+
+test("parses channel-specific browser variants", () => {
+	for (const browser of ["brave-beta", "chrome-canary", "edge-dev", "vivaldi", "opera", "arc"]) {
+		expect(
+			parseCommand([
+				"native",
+				"register",
+				"--extension-id",
+				"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+				"--browser",
+				browser,
+			]),
+		).toEqual({
+			browser,
+			extensionId: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			kind: "native-register",
+		});
+	}
+});

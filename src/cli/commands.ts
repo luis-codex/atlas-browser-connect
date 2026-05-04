@@ -3,13 +3,28 @@ import { z } from "zod";
 
 export const supportedBrowsers = [
 	"chrome",
-	"edge",
-	"brave",
-	"chromium",
+	"chrome-beta",
+	"chrome-dev",
+	"chrome-canary",
 	"chrome-for-testing",
+	"edge",
+	"edge-beta",
+	"edge-dev",
+	"edge-canary",
+	"brave",
+	"brave-beta",
+	"brave-nightly",
+	"chromium",
+	"vivaldi",
+	"opera",
+	"arc",
 ] as const;
 
 const supportedBrowserSchema = z.enum(supportedBrowsers);
+const registerBrowserSchema = z.union([
+	supportedBrowserSchema,
+	z.literal("all"),
+]);
 const unregisterBrowserSchema = z.union([
 	supportedBrowserSchema,
 	z.literal("all"),
@@ -22,13 +37,14 @@ const extensionIdSchema = z
 	);
 
 export type SupportedBrowser = z.infer<typeof supportedBrowserSchema>;
+export type RegisterBrowser = z.infer<typeof registerBrowserSchema>;
 export type UnregisterBrowser = z.infer<typeof unregisterBrowserSchema>;
 
 export type CliCommand =
 	| { kind: "help" }
 	| { kind: "extension-build"; outPath?: string; permissions?: string[] }
 	| {
-			browser: SupportedBrowser;
+			browser: RegisterBrowser;
 			extensionId: string;
 			kind: "native-register";
 	  }
@@ -117,7 +133,7 @@ function createProgram(setCommand: (command: CliCommand) => void) {
 			);
 
 			setCommand({
-				browser: parseSupportedBrowser(browser),
+				browser: parseRegisterBrowser(browser),
 				extensionId: parseExtensionId(extensionId),
 				kind: "native-register",
 			});
@@ -155,6 +171,18 @@ function requireOption(value: string | undefined, message: string) {
 	}
 
 	return value;
+}
+
+function parseRegisterBrowser(value: string) {
+	const result = registerBrowserSchema.safeParse(value);
+
+	if (!result.success) {
+		throw new Error(
+			`Unsupported browser: ${value}. Supported values: ${supportedBrowsers.join(", ")}, all.`,
+		);
+	}
+
+	return result.data;
 }
 
 function parseSupportedBrowser(value: string) {

@@ -47,8 +47,8 @@ export async function main(argv = process.argv.slice(2)) {
 				process.stdout.write(
 					[
 						`Registered ${nativeHostName} for chrome-extension://${command.extensionId}/`,
-						`Browser: ${result.browser}`,
-						`Manifest: ${result.manifestPath}`,
+						`Browsers: ${result.browsers.join(", ")}`,
+						`Manifests: ${result.manifestPaths.join(", ")}`,
 						`Host launcher: ${result.launcherPath}`,
 					].join("\n"),
 				);
@@ -133,13 +133,16 @@ function getHelpText() {
 
 Usage:
   atlas-browser-connect extension build [--out <path>] [--permissions <list>]
-  atlas-browser-connect native register --extension-id <id> --browser <browser>
+  atlas-browser-connect native register --extension-id <id> --browser <browser|all>
   atlas-browser-connect native unregister --browser <browser|all>
   atlas-browser-connect mcp
   atlas-browser-connect doctor
 
 Browsers:
-  chrome, edge, brave, chromium, chrome-for-testing
+  chrome, chrome-beta, chrome-dev, chrome-canary, chrome-for-testing,
+  edge, edge-beta, edge-dev, edge-canary,
+  brave, brave-beta, brave-nightly,
+  chromium, vivaldi, opera, arc
 `;
 }
 
