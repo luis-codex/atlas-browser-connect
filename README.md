@@ -1,232 +1,206 @@
-# atlas-browser-connect
+# Atlas Browser Connect
 
 [![npm version](https://img.shields.io/npm/v/atlas-browser-connect.svg)](https://www.npmjs.com/package/atlas-browser-connect)
 
-Expose Chromium extension APIs to MCP clients through Manifest V3 Native
-Messaging.
+> All the power of Chrome's extension APIs, accessible from **any** AI agent via
+> the Model Context Protocol. One tool. Any model. Zero vendor lock-in.
 
-`atlas-browser-connect` gives agents one portable MCP tool, `chrome_call`, for
-calling permitted `chrome.*` extension APIs from Chrome, Edge, Brave, Chromium,
-or Chrome for Testing. Use it to inspect and control browser state through the
-same APIs an extension can use: tabs, windows, tab groups, bookmarks, and any
-other MV3 service-worker API granted by the extension manifest.
+## Why Atlas?
 
-Common calls include `tabs.query`, `windows.getAll`, `bookmarks.getTree`,
-`bookmarks.search`, `tabGroups.query`, and other permitted namespace/method
-pairs.
+Products like Claude for Chrome give browser superpowers to one AI model.
+**Atlas gives them to all of them.**
 
-Chrome, Edge, Brave, or Chromium decide what is allowed through their normal
-extension permission model. The bridge does not bypass Manifest V3 permissions.
+Atlas Browser Connect exposes a single MCP tool — `chrome_call` — that can
+invoke _any_ `chrome.*` extension API. Since Chrome's API surface covers
+**everything** — tabs, scripting, debugger, downloads, cookies, history,
+bookmarks, storage, and [200+ more](https://developer.chrome.com/docs/extensions/reference/api) —
+one tool is all an agent needs to see, understand, and control the browser.
 
-## How It Works
+You decide how much power to grant by choosing which **permissions** to include
+when building the extension. The agent gets exactly the capabilities you allow,
+nothing more.
 
-```text
-Agent / MCP client
-  -> MCP stdio server
-    -> local pipe
-      -> Native Messaging host
-        <-> extension service worker
-          -> chrome[namespace][method](...args)
+| | Claude for Chrome | Atlas Browser Connect |
+| --- | --- | --- |
+| **AI model** | Claude only | Any MCP-compatible agent |
+| **Protocol** | Proprietary | Open (MCP) |
+| **Browser support** | Chrome only | Chrome, Edge, Brave, Chromium |
+| **Source** | Closed | Open-source (MIT) |
+| **Control level** | UI-level | API-level (`chrome.*`) |
+| **Capabilities** | Fixed by Anthropic | You choose the permissions |
+
+## What Can an Agent Do?
+
+Everything that Chrome extensions can do — it depends on the permissions you
+grant:
+
+| Permission | What the agent can do | Example call |
+| --- | --- | --- |
+| `tabs` | Inspect, create, close, move tabs | `tabs.query`, `tabs.create` |
+| `activeTab` | Read the active tab's URL and title | `tabs.get` |
+| `scripting` | **Inject scripts, read DOM, extract page content** | `scripting.executeScript` |
+| `debugger` | **Full Chrome DevTools Protocol access** | `debugger.attach`, `debugger.sendCommand` |
+| `tabCapture` | **Capture tab audio/video streams** | `tabCapture.capture` |
+| `windows` | Manage browser windows | `windows.getAll`, `windows.create` |
+| `bookmarks` | Search and organize bookmarks | `bookmarks.search`, `bookmarks.create` |
+| `history` | Browse and search history | `history.search`, `history.getVisits` |
+| `downloads` | Download files, monitor progress | `downloads.download`, `downloads.search` |
+| `cookies` | Read and set cookies | `cookies.getAll`, `cookies.set` |
+| `storage` | Persistent key-value storage | `storage.local.get`, `storage.local.set` |
+| `notifications` | Show desktop notifications | `notifications.create` |
+| `tabGroups` | Organize tabs into groups | `tabGroups.query`, `tabGroups.update` |
+| `alarms` | Schedule timed events | `alarms.create`, `alarms.getAll` |
+
+> **The full list**: any API in the
+> [Chrome Extensions API reference](https://developer.chrome.com/docs/extensions/reference/api)
+> that works from a MV3 service worker.
+
+### Power examples
+
+**Read a page's DOM** (needs `scripting`):
+
+```json
+{
+  "namespace": "scripting",
+  "method": "executeScript",
+  "args": [{ "target": { "tabId": 123 }, "func": "() => document.body.innerText" }]
+}
 ```
 
-The MCP server and Native Messaging host are separate processes because both use
-stdio, but with different protocols.
+**Take a screenshot** (needs `activeTab`):
 
-## Requirements
+```json
+{
+  "namespace": "tabs",
+  "method": "captureVisibleTab",
+  "args": [null, { "format": "png" }]
+}
+```
 
-- Node.js and npm. The recommended runtime flow uses `npx`.
-- Chrome, Edge, Brave, Chromium, or Chrome for Testing.
-- Developer mode enabled in the browser extension page.
+**Access DevTools Protocol** (needs `debugger`):
+
+```json
+{
+  "namespace": "debugger",
+  "method": "sendCommand",
+  "args": [{ "tabId": 123 }, "DOM.getDocument"]
+}
+```
+
+**Download a file** (needs `downloads`):
+
+```json
+{
+  "namespace": "downloads",
+  "method": "download",
+  "args": [{ "url": "https://example.com/report.pdf" }]
+}
+```
 
 ## Quick Start
 
-1. Generate the unpacked extension directory:
+### 1. Build the extension
 
 ```bash
 npx -y atlas-browser-connect extension build
 ```
 
-The command prints the folder that must be loaded into the browser.
+The default extension includes: `tabs`, `tabGroups`, `activeTab`, `bookmarks`,
+`windows`, `nativeMessaging`.
 
-2. Load the extension:
+To customize permissions:
+
+```bash
+npx -y atlas-browser-connect extension build \
+  --permissions tabs,scripting,debugger,downloads,cookies
+```
+
+### 2. Load it in your browser
+
+| Browser  | Extensions page          |
+| -------- | ------------------------ |
+| Chrome   | `chrome://extensions`    |
+| Edge     | `edge://extensions`      |
+| Brave    | `brave://extensions`     |
+| Chromium | `chromium://extensions`  |
+
+Enable developer mode → **Load unpacked** → select the generated folder → copy
+the **extension ID**.
+
+### 3. Register the Native Messaging host
+
+```bash
+npx -y atlas-browser-connect native register --extension-id <ID> --browser chrome
+```
+
+Supported browsers: `chrome`, `edge`, `brave`, `chromium`, `chrome-for-testing`.
+
+### 4. Reload the extension
+
+### 5. Connect your AI agent
+
+```json
+{
+  "mcpServers": {
+    "atlas-browser-connect": {
+      "command": "npx",
+      "args": ["-y", "atlas-browser-connect@latest", "mcp"]
+    }
+  }
+}
+```
+
+Works with **Claude Desktop, VS Code, Cursor, Codex, Gemini CLI**, or any
+MCP-compatible client.
+
+<details>
+<summary>VS Code / Cursor config</summary>
+
+`.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "atlas-browser-connect": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "atlas-browser-connect@latest", "mcp"]
+    }
+  }
+}
+```
+
+</details>
+
+## CLI Reference
+
+| Command | Description |
+| --- | --- |
+| `extension build [--out <path>]` | Generate the unpacked extension |
+| `native register --extension-id <id> --browser <b>` | Register Native Messaging host |
+| `native unregister --browser <b\|all>` | Remove host registration |
+| `mcp` | Start the MCP stdio server |
+| `doctor` | Check local installation paths |
+
+All commands: `npx -y atlas-browser-connect <command>`.
+
+## Architecture
 
 ```text
-Chrome:   chrome://extensions
-Edge:     edge://extensions
-Brave:    brave://extensions
-Chromium: chromium://extensions
-```
-
-Enable developer mode, choose "Load unpacked", select the generated extension
-folder, and copy the generated extension ID.
-
-3. Register the Native Messaging host:
-
-```bash
-npx -y atlas-browser-connect native register --extension-id <EXTENSION_ID> --browser chrome
-```
-
-Supported browser values are `chrome`, `edge`, `brave`, `chromium`, and
-`chrome-for-testing`.
-
-The register command installs the Native Messaging host into a stable user data
-directory before writing the browser manifest. It does not register a path inside
-the temporary `npx` package cache.
-
-4. Reload the extension card in the browser.
-
-5. Add the MCP server to your client config:
-
-```json
-{
-	"mcpServers": {
-		"atlas-browser-connect": {
-			"command": "npx",
-			"args": ["-y", "atlas-browser-connect@latest", "mcp"]
-		}
-	}
-}
-```
-
-The MCP command does not need the extension ID. The extension ID is only used by
-`native register` to authorize the loaded extension in the Native Messaging
-manifest.
-
-## CLI Commands
-
-Generate or refresh the unpacked extension:
-
-```bash
-npx -y atlas-browser-connect extension build
-```
-
-Choose a custom extension output directory:
-
-```bash
-npx -y atlas-browser-connect extension build --out ./atlas-extension
-```
-
-Register Native Messaging:
-
-```bash
-npx -y atlas-browser-connect native register --extension-id <EXTENSION_ID> --browser chrome
-```
-
-Unregister one browser:
-
-```bash
-npx -y atlas-browser-connect native unregister --browser chrome
-```
-
-Unregister all supported browser targets:
-
-```bash
-npx -y atlas-browser-connect native unregister --browser all
-```
-
-Check local installation paths:
-
-```bash
-npx -y atlas-browser-connect doctor
-```
-
-## MCP Client Examples
-
-### Claude Desktop
-
-```json
-{
-	"mcpServers": {
-		"atlas-browser-connect": {
-			"command": "npx",
-			"args": ["-y", "atlas-browser-connect@latest", "mcp"]
-		}
-	}
-}
-```
-
-### VS Code
-
-For `.vscode/mcp.json`:
-
-```json
-{
-	"servers": {
-		"atlas-browser-connect": {
-			"type": "stdio",
-			"command": "npx",
-			"args": ["-y", "atlas-browser-connect@latest", "mcp"]
-		}
-	}
-}
-```
-
-Some VS Code MCP clients use `mcpServers` instead of `servers`; use the shape
-your client expects.
-
-### Codex
-
-```json
-{
-	"mcpServers": {
-		"atlas-browser-connect": {
-			"command": "npx",
-			"args": ["-y", "atlas-browser-connect@latest", "mcp"]
-		}
-	}
-}
-```
-
-## Using `chrome_call`
-
-Query tabs:
-
-```json
-{
-	"namespace": "tabs",
-	"method": "query",
-	"args": [{ "active": true, "currentWindow": true }]
-}
-```
-
-Get browser windows:
-
-```json
-{
-	"namespace": "windows",
-	"method": "getAll",
-	"args": [{ "populate": true }]
-}
-```
-
-The call succeeds only when the API is available from an MV3 service worker and
-the extension manifest has the required permission.
-
-## Project Layout
-
-```text
-apps/
-  chrome-extension/       MV3 extension runtime
-  cli/                    npm command surface
-  mcp-server/             MCP stdio server
-  native-messaging-host/  Chrome Native Messaging host
-packages/
-  chrome-bridge-protocol/ Shared request/response contract
-  native-bridge-path/     Local pipe/socket naming
-scripts/                  Build automation
-```
-
-Each executable app uses a lightweight Ports and Adapters layout:
-
-```text
-app/
-  src/   runtime code grouped by responsibility
-  test/  tests for that app
+src/
+  shared/       Protocol types and bridge path config
+  extension/    Chrome MV3 extension (background service worker)
+  host/         Native Messaging host (stdin/stdout ↔ local pipe)
+  server/       MCP stdio server (chrome_call tool)
+  cli/          CLI surface (build, register, doctor)
+    native/     Platform-specific registration
+test/           Tests mirroring src/
+scripts/        Build automation
 ```
 
 ## Development
 
-Development requires [Bun](https://bun.sh/).
+Requires [Bun](https://bun.sh/).
 
 ```bash
 bun install
@@ -234,61 +208,16 @@ bun test
 bun run typecheck
 bun run check
 bun run build
-bun run package:check
 ```
-
-Run the built MCP server:
-
-```bash
-bun run mcp
-```
-
-## Publishing
-
-Publishing to npm runs from `.github/workflows/publish.yml` when a tag matching
-`v*` is pushed.
-
-Configure npm Trusted Publishing for:
-
-- package: `atlas-browser-connect`
-- GitHub owner/user: `luis-codex`
-- repository: `atlas-browser-connect`
-- workflow filename: `publish.yml`
-
-No npm token is needed. Before tagging a release, update `package.json`
-`version`; npm rejects publishing the same version twice.
 
 ## Troubleshooting
 
-### Native messaging host not found
-
-Run the register command again with the current extension ID, then reload the
-extension:
-
-```bash
-npx -y atlas-browser-connect native register --extension-id <EXTENSION_ID> --browser chrome
-```
-
-### Access to the native host is forbidden
-
-The extension ID in `allowed_origins` does not match the loaded extension.
-Re-run `native register` with the current extension ID from the browser
-extension page.
-
-### `Chrome native host is not connected`
-
-Reload the extension after registering the host. The background service worker
-must open the Native Messaging connection before the MCP server can reach the
-local bridge.
-
-### A Chrome API call fails
-
-Check that:
-
-- the extension manifest includes the required permission;
-- the API is available from an MV3 service worker;
-- the method does not require user activation;
-- the namespace and method names are valid.
+| Problem | Solution |
+| --- | --- |
+| Native host not found | Re-run `native register`, reload extension |
+| Access forbidden | Extension ID mismatch — re-run `native register` |
+| Host not connected | Reload extension after registering |
+| API call fails | Check permissions in manifest, MV3 availability |
 
 ## License
 

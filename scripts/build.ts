@@ -1,11 +1,12 @@
 import {
 	chmodSync,
-	copyFileSync,
 	mkdirSync,
 	readFileSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
+
+import { generateManifest } from "../src/extension/manifest";
 
 const cliOutput = "./dist/cli/index.js";
 
@@ -17,25 +18,25 @@ mkdirSync("./dist/chrome-extension", { recursive: true });
 
 const builds = [
 	Bun.build({
-		entrypoints: ["./apps/chrome-extension/src/background.ts"],
+		entrypoints: ["./src/extension/background.ts"],
 		outdir: "./dist/chrome-extension",
 		format: "esm",
 		minify: true,
 	}),
 	Bun.build({
-		entrypoints: ["./apps/mcp-server/src/index.ts"],
+		entrypoints: ["./src/server/index.ts"],
 		outdir: "./dist/mcp",
 		format: "esm",
 		target: "node",
 	}),
 	Bun.build({
-		entrypoints: ["./apps/native-messaging-host/src/index.ts"],
+		entrypoints: ["./src/host/index.ts"],
 		outdir: "./dist/native-messaging-host",
 		format: "esm",
 		target: "node",
 	}),
 	Bun.build({
-		entrypoints: ["./apps/cli/src/index.ts"],
+		entrypoints: ["./src/cli/index.ts"],
 		outdir: "./dist/cli",
 		format: "esm",
 		target: "node",
@@ -53,9 +54,9 @@ if (failedBuild) {
 	process.exit(1);
 }
 
-copyFileSync(
-	"./apps/chrome-extension/manifest.json",
+writeFileSync(
 	"./dist/chrome-extension/manifest.json",
+	JSON.stringify(generateManifest(), null, "\t"),
 );
 
 ensureExecutableCli();
