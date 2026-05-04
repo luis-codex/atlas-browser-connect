@@ -9,7 +9,7 @@ export function setWindowsRegistryValueWithPowerShell(
 		[
 			"-NoProfile",
 			"-Command",
-			"$key = $args[0]; $value = $args[1]; New-Item -Path ('Registry::' + $key) -Force | Out-Null; Set-Item -Path ('Registry::' + $key) -Value $value",
+			`& { param($key,$value) New-Item -Path ('Registry::' + $key) -Force | Out-Null; Set-Item -Path ('Registry::' + $key) -Value $value }`,
 			registryKey,
 			value,
 		],
@@ -27,7 +27,7 @@ export function removeWindowsRegistryKeyWithPowerShell(registryKey: string) {
 		[
 			"-NoProfile",
 			"-Command",
-			"$key = $args[0]; if (Test-Path -LiteralPath ('Registry::' + $key)) { Remove-Item -LiteralPath ('Registry::' + $key) -Force -Recurse }",
+			`& { param($key) if (Test-Path -LiteralPath ('Registry::' + $key)) { Remove-Item -LiteralPath ('Registry::' + $key) -Force -Recurse } }`,
 			registryKey,
 		],
 		{ stdio: "inherit" },
